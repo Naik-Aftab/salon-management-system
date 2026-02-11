@@ -1,121 +1,76 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { useDispatch } from 'react-redux';
-import { setUser } from '../features/auth/authSlice';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../app/hooks';
+import { login, type UserRole } from '../app/authSlice';
+import { type FormEvent, useEffect, useState } from 'react';
 
-export const Login: React.FC = () => {
+export default function Login() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { login, isLoading, error, isAuthenticated, clearError } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [validationError, setValidationError] = useState('');
+  const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+
+  const [name, setName] = useState('');
+  const [role, setRole] = useState<UserRole>('owner');
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     }
   }, [isAuthenticated, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setValidationError('');
-    clearError();
-
-    if (!email || !password) {
-      setValidationError('Please fill in all fields');
-      return;
-    }
-
-    try {
-      // TODO: Remove this bypass and use actual login
-      // await login({ email, password });
-      
-      // BYPASS: Directly set auth state and redirect to dashboard for testing
-      dispatch(setUser({
-        id: '1',
-        name: 'Test User',
-        email: email,
-      }));
-      navigate('/dashboard');
-    } catch (err) {
-      console.error('Login error:', err);
-    }
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    dispatch(login({ role, name }));
+    navigate('/dashboard', { replace: true });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-        <h2 className="text-2xl font-bold text-center text-gray-900 mb-6">
-          Sign in to your account
-        </h2>
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-sm border border-slate-200">
+        <h1 className="text-2xl font-bold text-slate-900">Salon Login</h1>
+        <p className="text-sm text-slate-600 mt-1">Choose role to simulate access levels.</p>
 
-        {(error || validationError) && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error || validationError}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email address
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              disabled={isLoading}
+              type="text"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Enter your name"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-cyan-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              disabled={isLoading}
-            />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
+            <select
+              value={role}
+              onChange={(event) => setRole(event.target.value as UserRole)}
+              className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-cyan-500"
+            >
+              <option value="owner">Owner</option>
+              <option value="manager">Manager</option>
+              <option value="employee">Employee</option>
+            </select>
           </div>
 
           <button
             type="submit"
-            disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-2 rounded-md font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="w-full rounded-md bg-cyan-600 px-4 py-2 text-white font-medium hover:bg-cyan-700"
           >
-            {isLoading ? 'Signing in...' : 'Sign in'}
+            Login
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <Link
-            to="/forgot-password"
-            className="text-sm text-blue-600 hover:text-blue-700"
-          >
-            Forgot your password?
+        <div className="mt-4 text-sm text-slate-600 flex justify-between">
+          <Link to="/forgot-password" className="text-cyan-700 hover:underline">
+            Forgot password?
           </Link>
-        </div>
-
-        <div className="mt-4 text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link
-              to="/register"
-              className="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Register here
-            </Link>
-          </p>
+          <Link to="/register" className="text-cyan-700 hover:underline">
+            Register
+          </Link>
         </div>
       </div>
     </div>
   );
-};
+}

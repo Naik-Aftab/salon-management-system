@@ -1,82 +1,54 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { Loader } from '../components/Loader';
-import { ProtectedRoute } from '../components/ProtectedRoute';
-
-// Pages
-import { Login } from '../pages/Login';
-import { Register } from '../pages/Register';
-import { ForgotPassword } from '../pages/ForgotPassword';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import DashboardLayout from '../components/DashboardLayout';
+import ProtectedRoute from '../components/ProtectedRoute';
+import Dashboard from '../pages/Dashboard';
+import ForgotPassword from '../pages/ForgotPassword';
+import Login from '../pages/Login';
+import AppointmentsPage from '../pages/modules/appointments/AppointmentsPage';
+import BillingPage from '../pages/modules/billing/BillingPage';
+import CustomerPage from '../pages/modules/customer/CustomerPage';
+import EmployeePage from '../pages/modules/employee/EmployeePage';
+import FinancePage from '../pages/modules/finance/FinancePage';
+import FurnitureToolsPage from '../pages/modules/furniture-tools/FurnitureToolsPage';
+import InventoryPage from '../pages/modules/inventory/InventoryPage';
+import MarketingPage from '../pages/modules/marketing/MarketingPage';
+import ReportsPage from '../pages/modules/reports/ReportsPage';
+import ServicesPage from '../pages/modules/services/ServicesPage';
 import { NotFound } from '../pages/NotFound';
+import Register from '../pages/Register';
 
-// Layouts
-import AuthLayout from '../layouts/AuthLayout';
-import { DashboardLayout } from '../layouts/DashboardLayout';
-
-// Placeholder pages
-const Dashboard = () => <div className="p-6"><h1 className="text-3xl font-bold">Dashboard</h1></div>;
-const Appointments = () => <div className="p-6"><h1 className="text-3xl font-bold">Appointments</h1></div>;
-const Services = () => <div className="p-6"><h1 className="text-3xl font-bold">Services</h1></div>;
-const Customers = () => <div className="p-6"><h1 className="text-3xl font-bold">Customers</h1></div>;
-const Employees = () => <div className="p-6"><h1 className="text-3xl font-bold">Employees</h1></div>;
-const Inventory = () => <div className="p-6"><h1 className="text-3xl font-bold">Inventory</h1></div>;
-const Finance = () => <div className="p-6"><h1 className="text-3xl font-bold">Finance</h1></div>;
-const Billing = () => <div className="p-6"><h1 className="text-3xl font-bold">Billing</h1></div>;
-const Reports = () => <div className="p-6"><h1 className="text-3xl font-bold">Reports</h1></div>;
-const Marketing = () => <div className="p-6"><h1 className="text-3xl font-bold">Marketing</h1></div>;
-const FurnitureTools = () => <div className="p-6"><h1 className="text-3xl font-bold">Furniture & Tools</h1></div>;
-
-const AppRoutes: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return <Loader />;
-  }
-
+export default function AppRoutes() {
   return (
     <Routes>
-      {/* Public Routes */}
-      {!isAuthenticated ? (
-        <>
-          <Route element={<AuthLayout />}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+
+      <Route element={<ProtectedRoute />}>
+        <Route element={<DashboardLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+
+          <Route path="/customers" element={<CustomerPage />} />
+          <Route path="/appointments" element={<AppointmentsPage />} />
+          <Route path="/services" element={<ServicesPage />} />
+
+          <Route element={<ProtectedRoute roles={['owner', 'manager']} />}>
+            <Route path="/employees" element={<EmployeePage />} />
+            <Route path="/billing" element={<BillingPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/marketing" element={<MarketingPage />} />
+            <Route path="/furniture-tools" element={<FurnitureToolsPage />} />
           </Route>
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </>
-      ) : (
-        <>
-          {/* Protected Routes */}
-          <Route
-            element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/appointments" element={<Appointments />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/employees" element={<Employees />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/finance" element={<Finance />} />
-            <Route path="/billing" element={<Billing />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/marketing" element={<Marketing />} />
-            <Route path="/furniture-tools" element={<FurnitureTools />} />
-            <Route path="*" element={<NotFound />} />
+
+          <Route element={<ProtectedRoute roles={['owner']} />}>
+            <Route path="/finance" element={<FinancePage />} />
           </Route>
-          <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/register" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/forgot-password" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </>
-      )}
+        </Route>
+      </Route>
+
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
-};
-
-export default AppRoutes;
+}

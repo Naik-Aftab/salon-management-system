@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+@layer base {
+  main div.rounded-2xl.border.bg-white,
+  main div.rounded-\[24px\].border.bg-white {
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  }
+}

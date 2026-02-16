@@ -51,17 +51,20 @@ export default function Dashboard() {
   }, [user]);
 
   return (
-    <section>
-      <div className="mb-6">
+    <section className="space-y-4">
+      <div className="rounded-2xl border border-[#E3E7F6] bg-gradient-to-r from-[#F7F8FF] to-[#EEF2FF] px-5 py-4 shadow-[0_8px_20px_rgba(30,40,90,0.08)]">
         <h2 className="text-2xl font-bold text-slate-900">Welcome to Dashboard</h2>
         <p className="text-slate-600">Access based on your current role permissions.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {modules.map((module) => (
-          <article key={module.key} className="rounded-lg border border-slate-200 bg-white p-4">
-            <h3 className="text-lg font-semibold text-slate-800">{module.title}</h3>
-            <p className="mt-2 text-sm text-slate-600">{module.description}</p>
+          <article
+            key={module.key}
+            className="rounded-2xl border border-[#E3E7F6] bg-white px-5 py-4 shadow-[0_6px_14px_rgba(30,40,90,0.08)] transition-transform hover:-translate-y-0.5"
+          >
+            <h3 className="text-lg font-semibold text-[#28345F]">{module.title}</h3>
+            <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{module.description}</p>
           </article>
         ))}
       </div>

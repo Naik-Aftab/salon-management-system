@@ -6,3 +6,24 @@ body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #b9bfd8 #eef0fa;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #eef0fa;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #b9bfd8;
+  border-radius: 10px;
+  border: 2px solid #eef0fa;
+}

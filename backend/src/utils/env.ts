@@ -3,10 +3,13 @@
  */
 export const getEnv = (key: string, defaultValue?: string): string => {
   const value = process.env[key];
-  if (!value && !defaultValue) {
+  if (value === undefined || value === "") {
+    if (defaultValue !== undefined) {
+      return defaultValue;
+    }
     throw new Error(`Missing environment variable: ${key}`);
   }
-  return value || defaultValue || "";
+  return value;
 };
 
 /**

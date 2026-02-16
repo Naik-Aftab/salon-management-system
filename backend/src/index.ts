@@ -6,6 +6,16 @@ import dotenv from "dotenv";
 import { errorHandler } from "./middleware/errorHandler";
 import { requestLogger } from "./middleware/logger";
 import healthRoutes from "./routes/health";
+import authRoutes from "./routes/auth";
+import branchRoutes from "./routes/branches";
+import designationRoutes from "./routes/designations";
+import skillRoutes from "./routes/skills";
+import employeeRoutes from "./routes/employees";
+import shiftRoutes from "./routes/shifts";
+import shiftAssignmentRoutes from "./routes/shiftAssignments";
+import leaveRoutes from "./routes/leaves";
+import customerRoutes from "./routes/customers";
+import appointmentRoutes from "./routes/appointments";
 
 dotenv.config();
 
@@ -34,6 +44,16 @@ app.use(
 
 // Routes
 app.use("/api/health", healthRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/branches", branchRoutes);
+app.use("/api/designations", designationRoutes);
+app.use("/api/skills", skillRoutes);
+app.use("/api/employees", employeeRoutes);
+app.use("/api/shifts", shiftRoutes);
+app.use("/api/shift-assignments", shiftAssignmentRoutes);
+app.use("/api/leaves", leaveRoutes);
+app.use("/api/customers", customerRoutes);
+app.use("/api/appointments", appointmentRoutes);
 
 // 404 Handler
 app.use((_req, res) => {

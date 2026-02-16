@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { login, type UserRole } from '../app/authSlice';
-import { type FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export default function Login() {
     }
   }, [isAuthenticated, navigate]);
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = (event: any) => {
     event.preventDefault();
     dispatch(login({ role, name }));
     navigate('/dashboard', { replace: true });

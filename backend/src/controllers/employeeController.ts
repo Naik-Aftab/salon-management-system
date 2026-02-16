@@ -16,6 +16,10 @@ interface EmployeeRow extends RowDataPacket {
   employment_type: string;
   status: string;
   salary: number | null;
+  bank_account_holder_name: string | null;
+  bank_name: string | null;
+  bank_account_number: string | null;
+  bank_ifsc_code: string | null;
   branch_id: number;
   branch_name: string;
   designation_id: number;
@@ -32,6 +36,9 @@ interface SkillRow extends RowDataPacket {
 
 const generateEmployeeCode = (): string =>
   `EMP-${randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase()}`;
+
+const IFSC_REGEX = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+const ACCOUNT_NUMBER_REGEX = /^[0-9]{6,20}$/;
 
 const normalizeSkillIds = (skillIds?: unknown): number[] => {
   if (!Array.isArray(skillIds)) {
@@ -152,6 +159,10 @@ export const createEmployee = async (
       employmentType,
       status,
       salary,
+      bankAccountHolderName,
+      bankName,
+      bankAccountNumber,
+      bankIfscCode,
       branchId,
       designationId,
       skillIds,
@@ -169,6 +180,10 @@ export const createEmployee = async (
       employmentType?: string;
       status?: string;
       salary?: number;
+      bankAccountHolderName?: string;
+      bankName?: string;
+      bankAccountNumber?: string;
+      bankIfscCode?: string;
       branchId?: number;
       designationId?: number;
       skillIds?: number[];
@@ -187,6 +202,21 @@ export const createEmployee = async (
     const normalizedSkillIds = normalizeSkillIds(skillIds);
     await ensureBranchAndDesignation(Number(branchId), Number(designationId));
     await ensureSkillsExist(normalizedSkillIds);
+
+    const normalizedIfsc = bankIfscCode?.trim().toUpperCase() || null;
+    const normalizedAccountNumber = bankAccountNumber?.trim() || null;
+    if (normalizedIfsc && !IFSC_REGEX.test(normalizedIfsc)) {
+      return res.status(400).json({ ok: false, error: "invalid IFSC code format" });
+    }
+    if (
+      normalizedAccountNumber &&
+      !ACCOUNT_NUMBER_REGEX.test(normalizedAccountNumber)
+    ) {
+      return res.status(400).json({
+        ok: false,
+        error: "invalid bank account number format",
+      });
+    }
 
     const existingEmail = await query<RowDataPacket[]>(
       "SELECT id FROM employees WHERE email = ? LIMIT 1",
@@ -215,9 +245,10 @@ export const createEmployee = async (
     const [result] = await connection.execute<ResultSetHeader>(
       `INSERT INTO employees (
         employee_code, first_name, last_name, email, phone, gender, date_of_birth,
-        hire_date, employment_type, status, salary, branch_id, designation_id,
+        hire_date, employment_type, status, salary, bank_account_holder_name, bank_name,
+        bank_account_number, bank_ifsc_code, branch_id, designation_id,
         address, emergency_contact_name, emergency_contact_phone
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         employeeCode,
         firstName.trim(),
@@ -230,6 +261,10 @@ export const createEmployee = async (
         employmentType || "full_time",
         status || "active",
         salary ?? null,
+        bankAccountHolderName?.trim() || null,
+        bankName?.trim() || null,
+        normalizedAccountNumber,
+        normalizedIfsc,
         Number(branchId),
         Number(designationId),
         address?.trim() || null,
@@ -307,6 +342,7 @@ export const listEmployees = async (
       `SELECT
          e.id, e.employee_code, e.first_name, e.last_name, e.email, e.phone, e.gender,
          e.date_of_birth, e.hire_date, e.employment_type, e.status, e.salary,
+         e.bank_account_holder_name, e.bank_name, e.bank_account_number, e.bank_ifsc_code,
          e.branch_id, b.name AS branch_name, e.designation_id, d.title AS designation_title,
          e.created_at, e.updated_at
        FROM employees e
@@ -354,6 +390,7 @@ export const getEmployeeById = async (
       `SELECT
          e.id, e.employee_code, e.first_name, e.last_name, e.email, e.phone, e.gender,
          e.date_of_birth, e.hire_date, e.employment_type, e.status, e.salary,
+         e.bank_account_holder_name, e.bank_name, e.bank_account_number, e.bank_ifsc_code,
          e.branch_id, b.name AS branch_name, e.designation_id, d.title AS designation_title,
          e.created_at, e.updated_at
        FROM employees e
@@ -411,6 +448,10 @@ export const updateEmployee = async (
       employmentType,
       status,
       salary,
+      bankAccountHolderName,
+      bankName,
+      bankAccountNumber,
+      bankIfscCode,
       branchId,
       designationId,
       skillIds,
@@ -428,6 +469,10 @@ export const updateEmployee = async (
       employmentType?: string;
       status?: string;
       salary?: number;
+      bankAccountHolderName?: string;
+      bankName?: string;
+      bankAccountNumber?: string;
+      bankIfscCode?: string;
       branchId?: number;
       designationId?: number;
       skillIds?: number[];
@@ -457,6 +502,25 @@ export const updateEmployee = async (
       }
     }
 
+    const nextIfsc =
+      bankIfscCode === undefined
+        ? existing.bank_ifsc_code
+        : bankIfscCode.trim().toUpperCase() || null;
+    const nextAccountNumber =
+      bankAccountNumber === undefined
+        ? existing.bank_account_number
+        : bankAccountNumber.trim() || null;
+
+    if (nextIfsc && !IFSC_REGEX.test(nextIfsc)) {
+      return res.status(400).json({ ok: false, error: "invalid IFSC code format" });
+    }
+    if (nextAccountNumber && !ACCOUNT_NUMBER_REGEX.test(nextAccountNumber)) {
+      return res.status(400).json({
+        ok: false,
+        error: "invalid bank account number format",
+      });
+    }
+
     await connection.beginTransaction();
     txStarted = true;
 
@@ -464,6 +528,7 @@ export const updateEmployee = async (
       `UPDATE employees SET
          employee_code = ?, first_name = ?, last_name = ?, email = ?, phone = ?, gender = ?,
          date_of_birth = ?, hire_date = ?, employment_type = ?, status = ?, salary = ?,
+         bank_account_holder_name = ?, bank_name = ?, bank_account_number = ?, bank_ifsc_code = ?,
          branch_id = ?, designation_id = ?, address = ?, emergency_contact_name = ?,
          emergency_contact_phone = ?
        WHERE id = ?`,
@@ -479,6 +544,12 @@ export const updateEmployee = async (
         employmentType || existing.employment_type,
         status || existing.status,
         salary === undefined ? existing.salary : salary,
+        bankAccountHolderName === undefined
+          ? existing.bank_account_holder_name
+          : bankAccountHolderName?.trim() || null,
+        bankName === undefined ? existing.bank_name : bankName?.trim() || null,
+        nextAccountNumber,
+        nextIfsc,
         nextBranchId,
         nextDesignationId,
         address === undefined ? existing.address : address?.trim() || null,

@@ -33,6 +33,7 @@ import {
 import CommissionTab from "./Commission";
 import PayrollTab from "./Payroll";
 import SchedulingTab from "./Scheduling";
+import AttendanceTab from "./Attendance";
 
 interface EmployeeRow {
   employeeId: string;
@@ -398,6 +399,8 @@ export default function EmployeePage() {
     return { ...defaults, ...mockOverrides, ...customOverrides };
   }, [customEmployeeProfiles, selectedEmployee]);
 
+  const staffMembers = useMemo(() => employeeRows.map((row) => row.name), [employeeRows]);
+
   const initials = useMemo(() => {
     if (!selectedEmployee) return "";
     return selectedEmployee.name
@@ -436,7 +439,7 @@ export default function EmployeePage() {
         </div>
 
         {activeTopTab === "Scheduling" ? (
-          <SchedulingTab />
+          <SchedulingTab staffMembers={staffMembers} />
         ) : activeTopTab === "All Staff" ? (
           <>
             {selectedEmployee && selectedEmployeeProfile ? (
@@ -742,10 +745,7 @@ export default function EmployeePage() {
             )}
           </>
         ) : activeTopTab === "Attendance" ? (
-          <section className="rounded-2xl border border-[#E2E6F3] bg-white px-5 py-8 text-center shadow-sm">
-            <h3 className="text-xl font-semibold text-[#2F3561]">Attendance</h3>
-            <p className="mt-2 text-sm text-slate-600">Attendance content moved to All Staff tab.</p>
-          </section>
+          <AttendanceTab />
         ) : activeTopTab === "Payroll" ? (
           <PayrollTab />
         ) : (

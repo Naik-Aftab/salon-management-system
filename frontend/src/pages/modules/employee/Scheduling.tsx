@@ -1,8 +1,13 @@
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, CirclePlus, Funnel } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, CirclePlus, Funnel } from "lucide-react";
 
 type ScheduleMode = "Shift Management" | "Leave Management";
 type ViewMode = "weekly" | "monthly";
+type RepeatMode = "No repeat" | "Daily" | "Weekly" | "Monthly";
+
+interface SchedulingTabProps {
+  staffMembers: string[];
+}
 
 interface ShiftType {
   id: string;
@@ -21,6 +26,21 @@ interface NewShiftForm {
   date: string;
 }
 
+interface AssignShiftForm {
+  staffMember: string;
+  shiftId: string;
+  date: string;
+  repeat: RepeatMode;
+  notes: string;
+  slotKey?: string;
+}
+
+interface Assignment {
+  staffMember: string;
+  repeat: RepeatMode;
+  notes: string;
+}
+
 const initialShiftTypes: ShiftType[] = [
   { id: "morning", name: "Morning", startTime: "08:00", endTime: "16:00", colorClass: "bg-[#F1EAF8] text-[#7A58A2]" },
   { id: "afternoon", name: "Afternoon", startTime: "13:00", endTime: "17:00", colorClass: "bg-[#E9F4EE] text-[#4F8C67]" },
@@ -35,6 +55,8 @@ const colorOptions = [
   "bg-[#F9D8E9] text-[#A34676]",
   "bg-[#F8DBC6] text-[#A45A38]",
 ];
+
+const repeatModes: RepeatMode[] = ["No repeat", "Daily", "Weekly", "Monthly"];
 
 const pad = (value: number) => String(value).padStart(2, "0");
 
@@ -99,23 +121,24 @@ const buildInitialSchedule = (dates: Date[]) => {
   ];
 
   return dates.reduce<Record<string, string[]>>((acc, date, index) => {
-    const key = dateKey(date);
-    acc[key] = pattern[index % pattern.length];
+    acc[dateKey(date)] = pattern[index % pattern.length];
     return acc;
   }, {});
 };
 
-export default function SchedulingTab() {
+export default function SchedulingTab({ staffMembers }: SchedulingTabProps) {
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("Shift Management");
   const [viewMode, setViewMode] = useState<ViewMode>("weekly");
   const [anchorDate, setAnchorDate] = useState(new Date(2024, 7, 1));
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [isCreateShiftOpen, setIsCreateShiftOpen] = useState(false);
+  const [isAssignShiftOpen, setIsAssignShiftOpen] = useState(false);
   const [shiftTypes, setShiftTypes] = useState<ShiftType[]>(initialShiftTypes);
   const [filterShiftId, setFilterShiftId] = useState<"all" | string>("all");
   const [scheduleByDate, setScheduleByDate] = useState<Record<string, string[]>>(() =>
     buildInitialSchedule(getVisibleDates(new Date(2024, 7, 1), "weekly"))
   );
+  const [assignmentBySlot, setAssignmentBySlot] = useState<Record<string, Assignment>>({});
   const [newShift, setNewShift] = useState<NewShiftForm>({
     name: "",
     startTime: "",
@@ -123,6 +146,13 @@ export default function SchedulingTab() {
     colorClass: colorOptions[0],
     description: "",
     date: "2024-08-01",
+  });
+  const [assignForm, setAssignForm] = useState<AssignShiftForm>({
+    staffMember: staffMembers[0] ?? "",
+    shiftId: "",
+    date: "2024-08-01",
+    repeat: "No repeat",
+    notes: "",
   });
 
   const visibleDates = useMemo(() => getVisibleDates(anchorDate, viewMode), [anchorDate, viewMode]);
@@ -150,8 +180,22 @@ export default function SchedulingTab() {
   );
 
   const maxRows = Math.max(1, ...filteredRowsByDate.map((items) => items.length));
-
   const rangeLabel = useMemo(() => getRangeLabel(visibleDates, viewMode), [visibleDates, viewMode]);
+
+  const monthlyCards = useMemo(
+    () =>
+      visibleDates.map((date) => {
+        const key = dateKey(date);
+        const shiftIds = normalizedSchedule[key] ?? [];
+        const ids = filterShiftId === "all" ? shiftIds : shiftIds.filter((id) => id === filterShiftId);
+        return {
+          date,
+          dateKey: key,
+          shifts: ids.map((id) => shiftTypes.find((shift) => shift.id === id)).filter(Boolean) as ShiftType[],
+        };
+      }),
+    [visibleDates, normalizedSchedule, filterShiftId, shiftTypes]
+  );
 
   const handleMoveRange = (direction: "prev" | "next") => {
     setAnchorDate((prev) => {
@@ -184,7 +228,6 @@ export default function SchedulingTab() {
     );
 
     const shiftId = existing?.id ?? `custom-${Date.now()}`;
-
     if (!existing) {
       setShiftTypes((prev) => [
         ...prev,
@@ -212,6 +255,33 @@ export default function SchedulingTab() {
       date: dateKey(visibleDates[0] ?? new Date()),
     });
     setIsCreateShiftOpen(false);
+  };
+
+  const openAssignShiftModal = (shiftId: string, date: string, rowIndex: number) => {
+    const slotKey = `${date}_${shiftId}_${rowIndex}`;
+    const current = assignmentBySlot[slotKey];
+    setAssignForm({
+      staffMember: current?.staffMember ?? staffMembers[0] ?? "",
+      shiftId,
+      date,
+      repeat: current?.repeat ?? "No repeat",
+      notes: current?.notes ?? "",
+      slotKey,
+    });
+    setIsAssignShiftOpen(true);
+  };
+
+  const handleAssignShift = () => {
+    if (!assignForm.staffMember || !assignForm.shiftId || !assignForm.slotKey) return;
+    setAssignmentBySlot((prev) => ({
+      ...prev,
+      [assignForm.slotKey as string]: {
+        staffMember: assignForm.staffMember,
+        repeat: assignForm.repeat,
+        notes: assignForm.notes,
+      },
+    }));
+    setIsAssignShiftOpen(false);
   };
 
   return (
@@ -332,43 +402,83 @@ export default function SchedulingTab() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-[#E4E7F0] bg-white">
-        <table className="w-full min-w-[980px] table-fixed border-separate border-spacing-0">
-          <thead>
-            <tr>
-              {visibleDates.map((day) => (
-                <th key={dateKey(day)} className="border-b border-r border-[#E4E7F0] px-2 py-2 text-center last:border-r-0">
-                  <p className="text-[0.95rem] font-semibold text-[#2B2B2B]">
-                    {weekdayShort(day)}, {day.getDate()} {monthShort(day)}
-                  </p>
-                  <p className="text-[0.78rem] font-semibold text-slate-500">24h</p>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: maxRows }).map((_, rowIndex) => (
-              <tr key={`row-${rowIndex}`}>
-                {visibleDates.map((day, colIndex) => {
-                  const shift = filteredRowsByDate[colIndex][rowIndex] ?? null;
-                  return (
-                    <td key={`${dateKey(day)}-${rowIndex}`} className="border-b border-r border-[#E4E7F0] p-1.5 align-top last:border-r-0">
-                      {shift ? (
-                        <div className={`rounded-[3px] px-2 py-2 text-center ${shift.colorClass}`}>
-                          <p className="text-[0.86rem] font-medium">{shift.name}</p>
-                          <p className="text-[0.78rem] font-semibold text-[#1F1F1F]">{shiftTimeLabel(shift)}</p>
-                        </div>
-                      ) : (
-                        <div className="h-[54px] rounded-[3px] bg-[#F9FAFD]" />
-                      )}
-                    </td>
-                  );
-                })}
+      {viewMode === "weekly" ? (
+        <div className="overflow-x-auto rounded-xl border border-[#E4E7F0] bg-white">
+          <table className="w-full min-w-[980px] table-fixed border-separate border-spacing-0">
+            <thead>
+              <tr>
+                {visibleDates.map((day) => (
+                  <th key={dateKey(day)} className="border-b border-r border-[#E4E7F0] px-2 py-2 text-center last:border-r-0">
+                    <p className="text-[0.95rem] font-semibold text-[#2B2B2B]">
+                      {weekdayShort(day)}, {day.getDate()} {monthShort(day)}
+                    </p>
+                    <p className="text-[0.78rem] font-semibold text-slate-500">24h</p>
+                  </th>
+                ))}
               </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: maxRows }).map((_, rowIndex) => (
+                <tr key={`row-${rowIndex}`}>
+                  {visibleDates.map((day, colIndex) => {
+                    const shift = filteredRowsByDate[colIndex][rowIndex] ?? null;
+                    const slot = shift ? `${dateKey(day)}_${shift.id}_${rowIndex}` : "";
+                    const assigned = assignmentBySlot[slot];
+                    return (
+                      <td key={`${dateKey(day)}-${rowIndex}`} className="border-b border-r border-[#E4E7F0] p-1.5 align-top last:border-r-0">
+                        {shift ? (
+                          <button
+                            type="button"
+                            onClick={() => openAssignShiftModal(shift.id, dateKey(day), rowIndex)}
+                            className={`w-full rounded-[3px] px-2 py-2 text-center transition hover:ring-1 hover:ring-[#A8B3DA] ${shift.colorClass}`}
+                          >
+                            <p className="text-[0.86rem] font-medium">{shift.name}</p>
+                            <p className="text-[0.78rem] font-semibold text-[#1F1F1F]">{shiftTimeLabel(shift)}</p>
+                            {assigned ? <p className="mt-1 text-[0.72rem] font-semibold text-[#2F3561]">{assigned.staffMember}</p> : null}
+                          </button>
+                        ) : (
+                          <div className="h-[54px] rounded-[3px] bg-[#F9FAFD]" />
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-[#E4E7F0] bg-white p-2.5">
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7">
+            {monthlyCards.map((card) => (
+              <article key={card.dateKey} className="rounded-lg border border-[#E6EAF4] bg-[#FBFCFF] p-2">
+                <p className="text-xs font-semibold text-[#33406E]">
+                  {weekdayShort(card.date)} {card.date.getDate()} {monthShort(card.date)}
+                </p>
+                <div className="mt-1.5 space-y-1.5">
+                  {card.shifts.slice(0, 3).map((shift, index) => {
+                    const slot = `${card.dateKey}_${shift.id}_${index}`;
+                    const assigned = assignmentBySlot[slot];
+                    return (
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => openAssignShiftModal(shift.id, card.dateKey, index)}
+                        className={`w-full rounded px-2 py-1 text-left transition hover:ring-1 hover:ring-[#A8B3DA] ${shift.colorClass}`}
+                      >
+                        <p className="text-[0.72rem] font-semibold">{shift.name}</p>
+                        <p className="text-[0.7rem] text-[#1F1F1F]">{shiftTimeLabel(shift)}</p>
+                        {assigned ? <p className="text-[0.68rem] font-semibold text-[#2F3561]">{assigned.staffMember}</p> : null}
+                      </button>
+                    );
+                  })}
+                  {card.shifts.length > 3 ? <p className="text-[0.68rem] font-semibold text-[#5B648C]">+{card.shifts.length - 3} more</p> : null}
+                </div>
+              </article>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        </div>
+      )}
 
       {isCreateShiftOpen ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 px-4">
@@ -459,6 +569,101 @@ export default function SchedulingTab() {
                 className="rounded-lg bg-[#4F69D9] px-4 py-2 text-sm font-semibold text-white hover:bg-[#445CC0]"
               >
                 Create Shift
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isAssignShiftOpen ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 px-4">
+          <div className="w-full max-w-[760px] rounded-2xl border border-[#DDE3F2] bg-white p-6 shadow-[0_22px_44px_rgba(15,23,42,0.25)]">
+            <h3 className="text-xl font-semibold text-[#1F1F1F]">Assign Shift</h3>
+
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm font-semibold text-[#2D325B]">Select Staff Member</label>
+                <select
+                  value={assignForm.staffMember}
+                  onChange={(event) => setAssignForm((prev) => ({ ...prev, staffMember: event.target.value }))}
+                  className="w-full rounded-lg border border-[#D9DEED] bg-white px-3 py-2 text-sm outline-none focus:border-[#AAB6DD]"
+                >
+                  {staffMembers.map((staff) => (
+                    <option key={staff} value={staff}>
+                      {staff}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm font-semibold text-[#2D325B]">Shift Type</label>
+                <select
+                  value={assignForm.shiftId}
+                  onChange={(event) => setAssignForm((prev) => ({ ...prev, shiftId: event.target.value }))}
+                  className="w-full rounded-lg border border-[#D9DEED] bg-white px-3 py-2 text-sm outline-none focus:border-[#AAB6DD]"
+                >
+                  {shiftTypes.map((shift) => (
+                    <option key={shift.id} value={shift.id}>
+                      {shift.name} ({shiftTimeLabel(shift)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-[#2D325B]">Date</label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={assignForm.date}
+                    onChange={(event) => setAssignForm((prev) => ({ ...prev, date: event.target.value }))}
+                    className="w-full rounded-lg border border-[#D9DEED] px-3 py-2 pr-10 text-sm outline-none focus:border-[#AAB6DD]"
+                  />
+                  <CalendarDays size={15} className="pointer-events-none absolute right-3 top-2.5 text-[#5C6795]" />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-[#2D325B]">Repeat</label>
+                <select
+                  value={assignForm.repeat}
+                  onChange={(event) => setAssignForm((prev) => ({ ...prev, repeat: event.target.value as RepeatMode }))}
+                  className="w-full rounded-lg border border-[#D9DEED] bg-white px-3 py-2 text-sm outline-none focus:border-[#AAB6DD]"
+                >
+                  {repeatModes.map((repeat) => (
+                    <option key={repeat} value={repeat}>
+                      {repeat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm font-semibold text-[#2D325B]">Notes (Optional)</label>
+                <textarea
+                  value={assignForm.notes}
+                  onChange={(event) => setAssignForm((prev) => ({ ...prev, notes: event.target.value }))}
+                  placeholder="Add any special instructions"
+                  className="h-20 w-full resize-none rounded-lg border border-[#D9DEED] px-3 py-2 text-sm outline-none focus:border-[#AAB6DD]"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsAssignShiftOpen(false)}
+                className="rounded-lg border border-[#D6DBEC] px-4 py-2 text-sm font-medium text-[#4C557F] hover:bg-[#F5F7FE]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAssignShift}
+                className="rounded-lg bg-[#4F69D9] px-4 py-2 text-sm font-semibold text-white hover:bg-[#445CC0]"
+              >
+                Assign Shift
               </button>
             </div>
           </div>

@@ -48,25 +48,26 @@ interface EmployeeRow {
 
 interface EmployeeFormData {
   employeeId: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   gender: string;
-  designation: string;
-  joinedOn: string;
-  services: string;
-  branch: string;
+  dateOfBirth: string;
+  hireDate: string;
+  employmentType: "full_time" | "part_time" | "contract" | "intern";
   status: "active" | "break" | "inactive";
   email: string;
-  contact: string;
-  age: string;
   phone: string;
-  altPhone: string;
-  dob: string;
-  maritalStatus: string;
+  salary: string;
+  bankAccountHolderName: string;
+  bankName: string;
+  bankAccountNumber: string;
+  bankIfscCode: string;
+  branchId: string;
+  designationId: string;
+  skillIds: string;
   address: string;
-  skillSet: string;
-  specialization: string;
-  education: string;
-  bank: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
 }
 
 interface AttendanceRow {
@@ -165,26 +166,40 @@ const initialEmployeeRows: EmployeeRow[] = [
 
 const emptyForm: EmployeeFormData = {
   employeeId: "",
-  name: "",
+  firstName: "",
+  lastName: "",
   gender: "",
-  designation: "",
-  joinedOn: "",
-  services: "",
-  branch: "",
+  dateOfBirth: "",
+  hireDate: "",
+  employmentType: "full_time",
   status: "active",
   email: "",
-  contact: "",
-  age: "",
   phone: "",
-  altPhone: "",
-  dob: "",
-  maritalStatus: "",
+  salary: "",
+  bankAccountHolderName: "",
+  bankName: "",
+  bankAccountNumber: "",
+  bankIfscCode: "",
+  branchId: "",
+  designationId: "",
+  skillIds: "",
   address: "",
-  skillSet: "",
-  specialization: "",
-  education: "",
-  bank: "",
+  emergencyContactName: "",
+  emergencyContactPhone: "",
 };
+
+const branchOptions = [
+  { id: "1", label: "Nandanwan colony" },
+  { id: "2", label: "Sadar branch" },
+  { id: "3", label: "Wardha road" },
+];
+
+const designationOptions = [
+  { id: "1", label: "Stylist" },
+  { id: "2", label: "Beautician" },
+  { id: "3", label: "Reception" },
+  { id: "4", label: "Manager" },
+];
 
 const statusStyles = {
   active: "bg-[#E8EFE9] text-slate-700",
@@ -333,21 +348,26 @@ export default function EmployeePage() {
   const handleCreateEmployee = () => {
     const requiredFields: (keyof EmployeeFormData)[] = [
       "employeeId",
-      "name",
+      "firstName",
+      "lastName",
       "gender",
-      "designation",
-      "joinedOn",
-      "services",
-      "branch",
+      "dateOfBirth",
+      "hireDate",
+      "employmentType",
       "status",
       "email",
-      "contact",
       "phone",
-      "dob",
+      "salary",
+      "bankAccountHolderName",
+      "bankName",
+      "bankAccountNumber",
+      "bankIfscCode",
+      "branchId",
+      "designationId",
+      "skillIds",
       "address",
-      "skillSet",
-      "specialization",
-      "education",
+      "emergencyContactName",
+      "emergencyContactPhone",
     ];
     const hasEmptyField = requiredFields.some((field) => String(formData[field]).trim() === "");
     if (hasEmptyField) {
@@ -355,14 +375,23 @@ export default function EmployeePage() {
       return;
     }
 
+    const selectedDesignation = designationOptions.find((item) => item.id === formData.designationId)?.label || "Staff";
+    const selectedBranch = branchOptions.find((item) => item.id === formData.branchId)?.label || "Main branch";
+    const normalizedSkillIds = formData.skillIds
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+    const employmentTypeLabel = formData.employmentType.replace("_", " ");
+    const bankSummary = `${formData.bankAccountHolderName.trim()} - ${formData.bankName.trim()} (${formData.bankAccountNumber.trim()}, ${formData.bankIfscCode.trim()})`;
+
     const newEmployee: EmployeeRow = {
       employeeId: formData.employeeId.trim(),
-      name: formData.name.trim(),
-      gender: formData.gender,
-      designation: formData.designation,
-      joinedOn: formData.joinedOn,
-      services: formData.services,
-      branch: formData.branch,
+      name: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
+      gender: formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).toLowerCase(),
+      designation: selectedDesignation,
+      joinedOn: formData.hireDate,
+      services: normalizedSkillIds.length ? `Skill IDs: ${normalizedSkillIds.join(", ")}` : "General",
+      branch: selectedBranch,
       status: formData.status,
     };
 
@@ -371,18 +400,18 @@ export default function EmployeePage() {
       ...prev,
       [newEmployee.employeeId]: {
         email: formData.email.trim(),
-        contact: formData.contact.trim(),
-        age: formData.age.trim(),
+        contact: formData.phone.trim(),
+        age: "",
         phone: formData.phone.trim(),
-        altPhone: formData.altPhone.trim(),
-        dob: formData.dob,
-        maritalStatus: formData.maritalStatus,
+        altPhone: formData.emergencyContactPhone.trim(),
+        dob: formData.dateOfBirth,
+        maritalStatus: "",
         address: formData.address.trim(),
-        dateOfJoining: formatJoinedDate(formData.joinedOn),
-        skillSet: formData.skillSet.trim(),
-        specialization: formData.specialization.trim(),
-        education: formData.education.trim(),
-        bank: formData.bank.trim(),
+        dateOfJoining: formatJoinedDate(formData.hireDate),
+        skillSet: normalizedSkillIds.length ? `Skill IDs: ${normalizedSkillIds.join(", ")}` : "",
+        specialization: `Employment: ${employmentTypeLabel}`,
+        education: "",
+        bank: bankSummary,
       },
     }));
     setFormData(emptyForm);
@@ -808,7 +837,7 @@ export default function EmployeePage() {
 
         <DialogContent sx={{ px: 3, py: 2.5 }}>
           <div className="grid grid-cols-1 gap-3.5 pt-1 md:grid-cols-2">
-            <TextField
+            {/* <TextField
               label="Employee ID"
               value={formData.employeeId}
               onChange={(e) => handleFormChange("employeeId", e.target.value)}
@@ -816,13 +845,43 @@ export default function EmployeePage() {
               size="small"
               required
               sx={fieldSx}
+            /> */}
+
+            <TextField
+              label="First Name"
+              value={formData.firstName}
+              onChange={(e) => handleFormChange("firstName", e.target.value)}
+              placeholder="sahil"
+              size="small"
+              required
+              sx={fieldSx}
             />
 
             <TextField
-              label="Full Name"
-              value={formData.name}
-              onChange={(e) => handleFormChange("name", e.target.value)}
-              placeholder="Enter full name"
+              label="Last Name"
+              value={formData.lastName}
+              onChange={(e) => handleFormChange("lastName", e.target.value)}
+              placeholder="mujawar"
+              size="small"
+              required
+              sx={fieldSx}
+            />
+
+            <TextField
+              label="Email"
+              value={formData.email}
+              onChange={(e) => handleFormChange("email", e.target.value)}
+              placeholder="sahil@example.com"
+              size="small"
+              required
+              sx={fieldSx}
+            />
+
+            <TextField
+              label="Phone"
+              value={formData.phone}
+              onChange={(e) => handleFormChange("phone", e.target.value)}
+              placeholder="+1-555-234-5678"
               size="small"
               required
               sx={fieldSx}
@@ -838,32 +897,27 @@ export default function EmployeePage() {
               sx={fieldSx}
             >
               <MenuItem value="">Select</MenuItem>
-              <MenuItem value="Male">Male</MenuItem>
-              <MenuItem value="Female">Female</MenuItem>
-              <MenuItem value="Other">Other</MenuItem>
+              <MenuItem value="male">Male</MenuItem>
+              <MenuItem value="female">Female</MenuItem>
+              <MenuItem value="other">Other</MenuItem>
             </TextField>
 
             <TextField
-              select
-              label="Designation"
-              value={formData.designation}
-              onChange={(e) => handleFormChange("designation", e.target.value)}
+              label="Date of Birth"
+              type="date"
+              value={formData.dateOfBirth}
+              onChange={(e) => handleFormChange("dateOfBirth", e.target.value)}
               size="small"
               required
+              InputLabelProps={{ shrink: true }}
               sx={fieldSx}
-            >
-              <MenuItem value="">Select</MenuItem>
-              <MenuItem value="Stylist">Stylist</MenuItem>
-              <MenuItem value="Beautician">Beautician</MenuItem>
-              <MenuItem value="Reception">Reception</MenuItem>
-              <MenuItem value="Manager">Manager</MenuItem>
-            </TextField>
+            />
 
             <TextField
-              label="Date of Joining"
+              label="Hire Date"
               type="date"
-              value={formData.joinedOn}
-              onChange={(e) => handleFormChange("joinedOn", e.target.value)}
+              value={formData.hireDate}
+              onChange={(e) => handleFormChange("hireDate", e.target.value)}
               size="small"
               required
               InputLabelProps={{ shrink: true }}
@@ -872,33 +926,17 @@ export default function EmployeePage() {
 
             <TextField
               select
-              label="Services"
-              value={formData.services}
-              onChange={(e) => handleFormChange("services", e.target.value)}
+              label="Employment Type"
+              value={formData.employmentType}
+              onChange={(e) => handleFormChange("employmentType", e.target.value)}
               size="small"
               required
               sx={fieldSx}
             >
-              <MenuItem value="">Select</MenuItem>
-              <MenuItem value="Hair stylist">Hair stylist</MenuItem>
-              <MenuItem value="Skin treatment">Skin treatment</MenuItem>
-              <MenuItem value="Operations">Operations</MenuItem>
-              <MenuItem value="Front desk">Front desk</MenuItem>
-            </TextField>
-
-            <TextField
-              select
-              label="Branch"
-              value={formData.branch}
-              onChange={(e) => handleFormChange("branch", e.target.value)}
-              size="small"
-              required
-              sx={fieldSx}
-            >
-              <MenuItem value="">Select</MenuItem>
-              <MenuItem value="Nandanwan colony">Nandanwan colony</MenuItem>
-              <MenuItem value="Sadar branch">Sadar branch</MenuItem>
-              <MenuItem value="Wardha road">Wardha road</MenuItem>
+              <MenuItem value="full_time">Full Time</MenuItem>
+              <MenuItem value="part_time">Part Time</MenuItem>
+              <MenuItem value="contract">Contract</MenuItem>
+              <MenuItem value="intern">Intern</MenuItem>
             </TextField>
 
             <TextField
@@ -916,76 +954,88 @@ export default function EmployeePage() {
             </TextField>
 
             <TextField
-              label="E-mail"
-              value={formData.email}
-              onChange={(e) => handleFormChange("email", e.target.value)}
-              placeholder="Enter email"
+              label="CTC"
+              type="number"
+              value={formData.salary}
+              onChange={(e) => handleFormChange("salary", e.target.value)}
+              placeholder="45000"
               size="small"
               required
               sx={fieldSx}
             />
 
             <TextField
-              label="Contact"
-              value={formData.contact}
-              onChange={(e) => handleFormChange("contact", e.target.value)}
-              placeholder="Enter contact number"
+              label="Bank Account Holder Name"
+              value={formData.bankAccountHolderName}
+              onChange={(e) => handleFormChange("bankAccountHolderName", e.target.value)}
+              placeholder="Rahul Kumar"
               size="small"
               required
               sx={fieldSx}
             />
 
             <TextField
-              label="Age"
-              value={formData.age}
-              onChange={(e) => handleFormChange("age", e.target.value)}
-              placeholder="Enter age"
-              size="small"
-              sx={fieldSx}
-            />
-
-            <TextField
-              label="Phone no."
-              value={formData.phone}
-              onChange={(e) => handleFormChange("phone", e.target.value)}
-              placeholder="Enter phone number"
+              label="Bank Name"
+              value={formData.bankName}
+              onChange={(e) => handleFormChange("bankName", e.target.value)}
+              placeholder="State Bank of India"
               size="small"
               required
               sx={fieldSx}
             />
 
             <TextField
-              label="Alt Phone"
-              value={formData.altPhone}
-              onChange={(e) => handleFormChange("altPhone", e.target.value)}
-              placeholder="Enter alternate phone"
+              label="Bank Account Number"
+              value={formData.bankAccountNumber}
+              onChange={(e) => handleFormChange("bankAccountNumber", e.target.value)}
+              placeholder="123456789012"
               size="small"
+              required
               sx={fieldSx}
             />
 
             <TextField
-              label="D.O.B."
-              type="date"
-              value={formData.dob}
-              onChange={(e) => handleFormChange("dob", e.target.value)}
+              label="Bank IFSC Code"
+              value={formData.bankIfscCode}
+              onChange={(e) => handleFormChange("bankIfscCode", e.target.value)}
+              placeholder="SBIN0001234"
               size="small"
               required
-              InputLabelProps={{ shrink: true }}
               sx={fieldSx}
             />
 
             <TextField
               select
-              label="Marital Status"
-              value={formData.maritalStatus}
-              onChange={(e) => handleFormChange("maritalStatus", e.target.value)}
+              label="Branch"
+              value={formData.branchId}
+              onChange={(e) => handleFormChange("branchId", e.target.value)}
               size="small"
+              required
               sx={fieldSx}
             >
               <MenuItem value="">Select</MenuItem>
-              <MenuItem value="Single">Single</MenuItem>
-              <MenuItem value="Married">Married</MenuItem>
-              <MenuItem value="Divorced">Divorced</MenuItem>
+              {branchOptions.map((branch) => (
+                <MenuItem key={branch.id} value={branch.id}>
+                  {branch.label}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              label="Designation"
+              value={formData.designationId}
+              onChange={(e) => handleFormChange("designationId", e.target.value)}
+              size="small"
+              required
+              sx={fieldSx}
+            >
+              <MenuItem value="">Select</MenuItem>
+              {designationOptions.map((designation) => (
+                <MenuItem key={designation.id} value={designation.id}>
+                  {designation.label}
+                </MenuItem>
+              ))}
             </TextField>
 
             <TextField
@@ -999,41 +1049,32 @@ export default function EmployeePage() {
             />
 
             <TextField
-              label="Skill Set"
-              value={formData.skillSet}
-              onChange={(e) => handleFormChange("skillSet", e.target.value)}
-              placeholder="Enter skill set"
+              label="Skills"
+              value={formData.skillIds}
+              onChange={(e) => handleFormChange("skillIds", e.target.value)}
+              placeholder="1, 2, 3"
               size="small"
               required
               sx={fieldSx}
             />
 
             <TextField
-              label="Specialization"
-              value={formData.specialization}
-              onChange={(e) => handleFormChange("specialization", e.target.value)}
-              placeholder="Enter specialization"
+              label="Emergency Contact Name"
+              value={formData.emergencyContactName}
+              onChange={(e) => handleFormChange("emergencyContactName", e.target.value)}
+              placeholder="Rohan Sharma"
               size="small"
               required
               sx={fieldSx}
             />
 
             <TextField
-              label="Education"
-              value={formData.education}
-              onChange={(e) => handleFormChange("education", e.target.value)}
-              placeholder="Enter education"
+              label="Emergency Contact Phone"
+              value={formData.emergencyContactPhone}
+              onChange={(e) => handleFormChange("emergencyContactPhone", e.target.value)}
+              placeholder="+1-555-999-8888"
               size="small"
               required
-              sx={fieldSx}
-            />
-
-            <TextField
-              label="Bank"
-              value={formData.bank}
-              onChange={(e) => handleFormChange("bank", e.target.value)}
-              placeholder="Enter bank details"
-              size="small"
               sx={fieldSx}
             />
           </div>

@@ -15,7 +15,7 @@ import {
 import type { Theme } from "@mui/material/styles";
 import type { TransitionProps } from "@mui/material/transitions";
 import { X } from "lucide-react";
-import type { EmployeeFormData } from "../employeeTypes";
+import type { EmployeeFormData } from "../EmployeePage";
 
 const dialogTransition = (props: TransitionProps & { children: React.ReactElement }) => (
   <Grow {...props} timeout={250} />

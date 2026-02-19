@@ -1,5 +1,5 @@
 import { ArrowLeft } from "lucide-react";
-import type { EmployeeProfileMock, EmployeeRow } from "../employeeTypes";
+import type { EmployeeProfileMock, EmployeeRow } from "../EmployeePage";
 
 interface EmployeeProfilePanelProps {
   employee: EmployeeRow;

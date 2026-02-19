@@ -1,23 +1,9 @@
 import React, { useMemo, useState } from "react";
 import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Grow,
-  IconButton,
-  MenuItem,
   Pagination,
   TableSortLabel,
-  TextField,
-  type SxProps,
 } from "@mui/material";
-import type { TransitionProps } from "@mui/material/transitions";
-import type { Theme } from "@mui/material/styles";
 import {
-  ArrowLeft,
   CalendarClock,
   Check,
   ChevronDown,
@@ -34,70 +20,9 @@ import CommissionTab from "./Commission";
 import PayrollTab from "./Payroll";
 import SchedulingTab from "./Scheduling";
 import AttendanceTab from "./Attendance";
-
-interface EmployeeRow {
-  employeeId: string;
-  name: string;
-  gender: string;
-  designation: string;
-  joinedOn: string;
-  services: string;
-  branch: string;
-  status: "active" | "break" | "inactive";
-}
-
-interface EmployeeFormData {
-  employeeId: string;
-  firstName: string;
-  lastName: string;
-  gender: string;
-  dateOfBirth: string;
-  hireDate: string;
-  employmentType: "full_time" | "part_time" | "contract" | "intern";
-  status: "active" | "break" | "inactive";
-  email: string;
-  phone: string;
-  salary: string;
-  bankAccountHolderName: string;
-  bankName: string;
-  bankAccountNumber: string;
-  bankIfscCode: string;
-  branchId: string;
-  designationId: string;
-  skillIds: string;
-  address: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-}
-
-interface AttendanceRow {
-  estimateDate: string;
-  duration: string;
-  permissionDetail: string;
-  action: "Approved" | "Rejected";
-}
-
-interface EmployeeProfileMock {
-  email: string;
-  contact: string;
-  dob: string;
-  age: string;
-  phone: string;
-  altPhone: string;
-  maritalStatus: string;
-  address: string;
-  dateOfJoining: string;
-  skillSet: string;
-  specialization: string;
-  education: string;
-  bank: string;
-  tenure: string;
-  attendance: AttendanceRow[];
-}
-
-type SortableKey = "employeeId" | "joinedOn";
-type SortOrder = "asc" | "desc";
-type EmployeeTopTab = "All Staff" | "Scheduling" | "Attendance" | "Payroll" | "Commission";
+import AddEmployeeDialog from "./components/AddEmployeeDialog";
+import EmployeeProfilePanel from "./components/EmployeeProfilePanel";
+import type { AttendanceRow, EmployeeFormData, EmployeeProfileMock, EmployeeRow, EmployeeTopTab, SortOrder, SortableKey } from "./employeeTypes";
 const topTabs: EmployeeTopTab[] = ["All Staff", "Scheduling", "Attendance", "Payroll", "Commission"];
 const rowsPerPage = 10;
 
@@ -207,10 +132,6 @@ const statusStyles = {
   inactive: "bg-[#F0DFE2] text-[#5D3236]",
 } as const;
 
-const dialogTransition = (props: TransitionProps & { children: React.ReactElement }) => (
-  <Grow {...props} timeout={250} />
-);
-
 const defaultAttendanceRows: AttendanceRow[] = [
   { estimateDate: "12-july-25", duration: "12 hours", permissionDetail: "Half day", action: "Rejected" },
   { estimateDate: "12-july-25", duration: "6 hours", permissionDetail: "Vacation Leave", action: "Approved" },
@@ -261,41 +182,6 @@ const employeeProfileMockById: Record<string, Partial<EmployeeProfileMock>> = {
     tenure: "3 Years,2 Month,11 Day",
   },
 };
-
-const fieldSx: SxProps<Theme> = {
-  "& .MuiInputBase-input::placeholder": {
-    color: "#8A92B5",
-    opacity: 1,
-    fontSize: "0.84rem",
-  },
-  "& .MuiOutlinedInput-root": {
-    borderRadius: "10px",
-    backgroundColor: "#fbfcff",
-    transition: "all 0.2s ease",
-    fontSize: "0.9rem",
-  },
-  "& .MuiOutlinedInput-root:hover fieldset": {
-    borderColor: "#98A2D4",
-  },
-  "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-    borderColor: "#5C6699",
-    borderWidth: "1px",
-  },
-  "& .MuiInputLabel-root": {
-    color: "#5D668F",
-    fontWeight: 600,
-    fontSize: "0.88rem",
-  },
-};
-function KVRow({ label, value }: { label: string; value?: string }) {
-  return (
-    <div className="grid grid-cols-[78px_10px_minmax(0,1fr)] items-start gap-1.5 leading-[1.3]">
-      <p className="text-[0.82rem] font-semibold text-[#111827]">{label}</p>
-      <p className="text-[0.82rem] font-semibold text-[#111827]">:</p>
-      <p className="text-[0.82rem] text-[#111827] break-words">{value || ""}</p>
-    </div>
-  );
-}
 
 export default function EmployeePage() {
   const [activeTopTab, setActiveTopTab] = useState<EmployeeTopTab>("All Staff");
@@ -472,133 +358,13 @@ export default function EmployeePage() {
         ) : activeTopTab === "All Staff" ? (
           <>
             {selectedEmployee && selectedEmployeeProfile ? (
-          <div className="rounded-[24px] border border-[#E2E5ED] bg-[#F5F6F8] p-4 shadow-[0_10px_20px_rgba(20,25,40,0.05)] md:p-4">
-            <div className="mb-4 flex items-center gap-2 rounded-2xl border border-[#E2E5ED] bg-white px-3.5 py-2.5 text-[#2F3561] shadow-sm">
-              <button
-                type="button"
-                onClick={() => setSelectedEmployee(null)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#D8DDF0] text-[#2F3561] transition hover:bg-[#F2F2F2]"
-              >
-                <ArrowLeft size={16} />
-              </button>
-              <p className="text-[0.95rem] font-semibold tracking-tight">Employee Profile</p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
-              <div className="rounded-2xl border border-[#E2E5ED] bg-white p-3 shadow-sm lg:col-span-9">
-                <div className="grid grid-cols-1 gap-3 lg:grid-cols-[230px_minmax(0,1fr)_minmax(0,1fr)]">
-                  <article className="rounded-2xl border border-[#E2E5ED] bg-[#FBFCFF] p-4 text-center">
-                    <div className="mx-auto mb-2.5 flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-[#DDE2EE]">
-                      <span className="text-3xl font-bold text-[#29335D]">{initials}</span>
-                    </div>
-                    <p className="whitespace-nowrap text-[1.75rem] font-semibold leading-tight text-[#2D2D2D]">
-                      {selectedEmployee.name}
-                    </p>
-                    <p className="text-[1.2rem] text-[#6F758F]">{selectedEmployee.gender}</p>
-                    <p className="mt-1 text-[11px] font-medium text-[#66709C]">EMP.ID: {selectedEmployee.employeeId}</p>
-                  </article>
-
-                  <article className="border-r border-[#E2E5ED] pr-4">
-                    <div className="space-y-2.5">
-                      <KVRow label="E-mail" value={selectedEmployeeProfile.email} />
-                      <KVRow label="Cont" value={selectedEmployeeProfile.contact} />
-                      <KVRow label="Age" value={selectedEmployeeProfile.age} />
-                      <KVRow label="Ph. no." value={selectedEmployeeProfile.phone} />
-                      <KVRow label="Alt" value={selectedEmployeeProfile.altPhone} />
-                      <KVRow label="D.O.B." value={selectedEmployeeProfile.dob} />
-                      <KVRow label="Marital" value={selectedEmployeeProfile.maritalStatus} />
-                      <KVRow label="Addr." value={selectedEmployeeProfile.address} />
-                    </div>
-                  </article>
-
-                  <article className="text-[0.84rem] text-[#1F1F1F]">
-                    {[
-                      ["Date of joining.", selectedEmployeeProfile.dateOfJoining],
-                      ["Skill Set", selectedEmployeeProfile.skillSet],
-                      ["Specialization", selectedEmployeeProfile.specialization],
-                      ["Education", selectedEmployeeProfile.education],
-                    ].map(([k, v]) => (
-                      <div key={k} className="mb-2 grid grid-cols-[108px_10px_minmax(0,1fr)] gap-1 leading-[1.35]">
-                        <p className="font-semibold">{k}</p>
-                        <p>:</p>
-                        <p className="break-words">{v}</p>
-                      </div>
-                    ))}
-                  </article>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3 lg:col-span-3">
-                <article className="min-h-[230px] rounded-2xl border border-[#E2E5ED] bg-white p-4 shadow-sm">
-                  <h3 className="text-center text-[1.65rem] font-semibold leading-tight text-[#2A3158] underline underline-offset-2">
-                    Account Details
-                  </h3>
-                  <div className="mt-4 rounded-xl border border-[#E2E5ED] bg-[#FAFBFF] p-3.5">
-                    <div className="grid grid-cols-[56px_10px_1fr] text-[0.85rem] text-[#1F1F1F]">
-                    <p className="font-semibold">Bank</p>
-                    <p>:</p>
-                    <p>{selectedEmployeeProfile.bank || ""}</p>
-                    </div>
-                  </div>
-                </article>
-
-                <article className="rounded-2xl border border-[#E2E5ED] bg-white px-2 py-3 text-center shadow-sm">
-                  <p className="text-[1.08rem] font-semibold leading-tight text-[#2A3158] underline underline-offset-2">
-                    Employee Tenure
-                  </p>
-                  <p className="mt-1 whitespace-nowrap text-[1.2rem] font-semibold leading-tight tracking-tight text-[#151515]">
-                    {selectedEmployeeProfile.tenure}
-                  </p>
-                </article>
-              </div>
-
-              <article className="min-h-[300px] rounded-2xl border border-[#E2E5ED] bg-white p-4 shadow-sm lg:col-span-4">
-                <h3 className="whitespace-nowrap text-center text-[1.85rem] font-semibold leading-tight text-[#3A3A3A]">
-                  Salary &amp; Commission
-                </h3>
-              </article>
-
-              <article className="rounded-2xl border border-[#E2E5ED] bg-white p-4 shadow-sm lg:col-span-8">
-                <h3 className="whitespace-nowrap text-center text-[1.85rem] font-semibold leading-tight text-[#3A3A3A] underline underline-offset-2">
-                  Attendance
-                </h3>
-                <div className="mt-4 overflow-x-auto">
-                  <table className="w-full min-w-[520px] text-left">
-                    <thead>
-                      <tr className="text-[0.9rem] text-[#1F1F1F]">
-                        <th className="px-2 py-2 font-semibold">Estimate Date</th>
-                        <th className="px-2 py-2 font-semibold">Duration</th>
-                        <th className="px-2 py-2 font-semibold">Permission Detail</th>
-                        <th className="px-2 py-2 font-semibold">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#EDF0FB] bg-white">
-                      {selectedEmployeeProfile.attendance.map((item, index) => (
-                        <tr key={`${item.estimateDate}-${index}`} className="text-[0.86rem] text-[#202020]">
-                          <td className="px-2 py-2">{item.estimateDate}</td>
-                          <td className="px-2 py-2">{item.duration}</td>
-                          <td className="px-2 py-2">{item.permissionDetail}</td>
-                          <td className="px-2 py-2">
-                            <span
-                              className={`inline-flex min-w-[90px] items-center justify-center rounded-full px-2.5 py-0.5 text-[0.76rem] font-medium ${
-                                item.action === "Approved"
-                                  ? "bg-[#DFF2E5] text-[#2A7A44]"
-                                  : "bg-[#F5DDE0] text-[#A74352]"
-                              }`}
-                            >
-                              {item.action}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </article>
-
-            </div>
-          </div>
-        ) : (
+              <EmployeeProfilePanel
+                employee={selectedEmployee}
+                profile={selectedEmployeeProfile}
+                initials={initials}
+                onBack={() => setSelectedEmployee(null)}
+              />
+            ) : (
           <>
             {/* Summary cards */}
             <div className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
@@ -782,342 +548,16 @@ export default function EmployeePage() {
         )}
       </div>
 
-      {/* Add employee dialog */}
-      <Dialog
+      <AddEmployeeDialog
         open={isAddDialogOpen}
+        formData={formData}
+        formError={formError}
+        branchOptions={branchOptions}
+        designationOptions={designationOptions}
         onClose={() => setIsAddDialogOpen(false)}
-        maxWidth="sm"
-        keepMounted
-        TransitionComponent={dialogTransition}
-        PaperProps={{
-          sx: {
-            width: "500px",
-            maxWidth: "calc(100vw - 32px)",
-            borderRadius: "20px",
-            border: "1px solid #E2E6F5",
-            overflow: "hidden",
-            boxShadow: "0 24px 70px rgba(25, 38, 89, 0.28)",
-            backgroundImage: "linear-gradient(180deg, rgba(247,248,255,0.95) 0%, rgba(255,255,255,0.98) 40%)",
-          },
-        }}
-        slotProps={{
-          backdrop: {
-            sx: {
-              backgroundColor: "rgba(31, 40, 82, 0.26)",
-              backdropFilter: "blur(2px)",
-            },
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            px: 3,
-            py: 2.5,
-            borderBottom: "1px solid #E6E9F6",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <div>
-            <p className="m-0 text-[1.35rem] font-bold tracking-tight text-[#2F3561]">Add Employee</p>
-            <DialogContentText sx={{ m: 0, mt: 0.5, color: "#70789C", fontSize: "0.82rem" }}>
-              Fill in the details below to onboard a new team member.
-            </DialogContentText>
-          </div>
-
-          <IconButton
-            size="small"
-            onClick={() => setIsAddDialogOpen(false)}
-            sx={{ border: "1px solid #D6DBEE", borderRadius: "10px" }}
-          >
-            <X size={16} />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent sx={{ px: 3, py: 2.5 }}>
-          <div className="grid grid-cols-1 gap-3.5 pt-1 md:grid-cols-2">
-            {/* <TextField
-              label="Employee ID"
-              value={formData.employeeId}
-              onChange={(e) => handleFormChange("employeeId", e.target.value)}
-              placeholder="EMP-1075"
-              size="small"
-              required
-              sx={fieldSx}
-            /> */}
-
-            <TextField
-              label="First Name"
-              value={formData.firstName}
-              onChange={(e) => handleFormChange("firstName", e.target.value)}
-              placeholder="sahil"
-              size="small"
-              required
-              sx={fieldSx}
-            />
-
-            <TextField
-              label="Last Name"
-              value={formData.lastName}
-              onChange={(e) => handleFormChange("lastName", e.target.value)}
-              placeholder="mujawar"
-              size="small"
-              required
-              sx={fieldSx}
-            />
-
-            <TextField
-              label="Email"
-              value={formData.email}
-              onChange={(e) => handleFormChange("email", e.target.value)}
-              placeholder="sahil@example.com"
-              size="small"
-              required
-              sx={fieldSx}
-            />
-
-            <TextField
-              label="Phone"
-              value={formData.phone}
-              onChange={(e) => handleFormChange("phone", e.target.value)}
-              placeholder="+1-555-234-5678"
-              size="small"
-              required
-              sx={fieldSx}
-            />
-
-            <TextField
-              select
-              label="Gender"
-              value={formData.gender}
-              onChange={(e) => handleFormChange("gender", e.target.value)}
-              size="small"
-              required
-              sx={fieldSx}
-            >
-              <MenuItem value="">Select</MenuItem>
-              <MenuItem value="male">Male</MenuItem>
-              <MenuItem value="female">Female</MenuItem>
-              <MenuItem value="other">Other</MenuItem>
-            </TextField>
-
-            <TextField
-              label="Date of Birth"
-              type="date"
-              value={formData.dateOfBirth}
-              onChange={(e) => handleFormChange("dateOfBirth", e.target.value)}
-              size="small"
-              required
-              InputLabelProps={{ shrink: true }}
-              sx={fieldSx}
-            />
-
-            <TextField
-              label="Hire Date"
-              type="date"
-              value={formData.hireDate}
-              onChange={(e) => handleFormChange("hireDate", e.target.value)}
-              size="small"
-              required
-              InputLabelProps={{ shrink: true }}
-              sx={fieldSx}
-            />
-
-            <TextField
-              select
-              label="Employment Type"
-              value={formData.employmentType}
-              onChange={(e) => handleFormChange("employmentType", e.target.value)}
-              size="small"
-              required
-              sx={fieldSx}
-            >
-              <MenuItem value="full_time">Full Time</MenuItem>
-              <MenuItem value="part_time">Part Time</MenuItem>
-              <MenuItem value="contract">Contract</MenuItem>
-              <MenuItem value="intern">Intern</MenuItem>
-            </TextField>
-
-            <TextField
-              select
-              label="Status"
-              value={formData.status}
-              onChange={(e) => handleFormChange("status", e.target.value)}
-              size="small"
-              required
-              sx={fieldSx}
-            >
-              <MenuItem value="active">Active</MenuItem>
-              <MenuItem value="break">Break</MenuItem>
-              <MenuItem value="inactive">Inactive</MenuItem>
-            </TextField>
-
-            <TextField
-              label="CTC"
-              type="number"
-              value={formData.salary}
-              onChange={(e) => handleFormChange("salary", e.target.value)}
-              placeholder="45000"
-              size="small"
-              required
-              sx={fieldSx}
-            />
-
-            <TextField
-              label="Bank Account Holder Name"
-              value={formData.bankAccountHolderName}
-              onChange={(e) => handleFormChange("bankAccountHolderName", e.target.value)}
-              placeholder="Rahul Kumar"
-              size="small"
-              required
-              sx={fieldSx}
-            />
-
-            <TextField
-              label="Bank Name"
-              value={formData.bankName}
-              onChange={(e) => handleFormChange("bankName", e.target.value)}
-              placeholder="State Bank of India"
-              size="small"
-              required
-              sx={fieldSx}
-            />
-
-            <TextField
-              label="Bank Account Number"
-              value={formData.bankAccountNumber}
-              onChange={(e) => handleFormChange("bankAccountNumber", e.target.value)}
-              placeholder="123456789012"
-              size="small"
-              required
-              sx={fieldSx}
-            />
-
-            <TextField
-              label="Bank IFSC Code"
-              value={formData.bankIfscCode}
-              onChange={(e) => handleFormChange("bankIfscCode", e.target.value)}
-              placeholder="SBIN0001234"
-              size="small"
-              required
-              sx={fieldSx}
-            />
-
-            <TextField
-              select
-              label="Branch"
-              value={formData.branchId}
-              onChange={(e) => handleFormChange("branchId", e.target.value)}
-              size="small"
-              required
-              sx={fieldSx}
-            >
-              <MenuItem value="">Select</MenuItem>
-              {branchOptions.map((branch) => (
-                <MenuItem key={branch.id} value={branch.id}>
-                  {branch.label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              select
-              label="Designation"
-              value={formData.designationId}
-              onChange={(e) => handleFormChange("designationId", e.target.value)}
-              size="small"
-              required
-              sx={fieldSx}
-            >
-              <MenuItem value="">Select</MenuItem>
-              {designationOptions.map((designation) => (
-                <MenuItem key={designation.id} value={designation.id}>
-                  {designation.label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              label="Address"
-              value={formData.address}
-              onChange={(e) => handleFormChange("address", e.target.value)}
-              placeholder="Enter address"
-              size="small"
-              required
-              sx={fieldSx}
-            />
-
-            <TextField
-              label="Skills"
-              value={formData.skillIds}
-              onChange={(e) => handleFormChange("skillIds", e.target.value)}
-              placeholder="1, 2, 3"
-              size="small"
-              required
-              sx={fieldSx}
-            />
-
-            <TextField
-              label="Emergency Contact Name"
-              value={formData.emergencyContactName}
-              onChange={(e) => handleFormChange("emergencyContactName", e.target.value)}
-              placeholder="Rohan Sharma"
-              size="small"
-              required
-              sx={fieldSx}
-            />
-
-            <TextField
-              label="Emergency Contact Phone"
-              value={formData.emergencyContactPhone}
-              onChange={(e) => handleFormChange("emergencyContactPhone", e.target.value)}
-              placeholder="+1-555-999-8888"
-              size="small"
-              required
-              sx={fieldSx}
-            />
-          </div>
-
-          {formError ? <p className="mt-3 rounded-lg bg-rose-50 px-2.5 py-2 text-sm text-rose-700">{formError}</p> : null}
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, pb: 2.5, pt: 0.5 }}>
-          <Button
-            onClick={() => setIsAddDialogOpen(false)}
-            variant="outlined"
-            sx={{
-              textTransform: "none",
-              borderColor: "#CDD3E9",
-              color: "#4C557F",
-              borderRadius: "10px",
-              px: 2.2,
-              "&:hover": { borderColor: "#B7BFE0", backgroundColor: "#F6F7FD" },
-            }}
-          >
-            Cancel
-          </Button>
-
-          <Button
-            onClick={handleCreateEmployee}
-            variant="contained"
-            sx={{
-              textTransform: "none",
-              borderRadius: "10px",
-              px: 2.4,
-              fontWeight: 700,
-              background: "linear-gradient(135deg, #2F3561 0%, #444D87 100%)",
-              boxShadow: "0 10px 20px rgba(47,53,97,0.26)",
-              "&:hover": {
-                background: "linear-gradient(135deg, #28305B 0%, #3E477F 100%)",
-                boxShadow: "0 12px 24px rgba(47,53,97,0.32)",
-              },
-            }}
-          >
-            Save Employee
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onSave={handleCreateEmployee}
+        onFieldChange={handleFormChange}
+      />
     </section>
   );
 }

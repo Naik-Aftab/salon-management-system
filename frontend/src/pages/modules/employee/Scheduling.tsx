@@ -42,18 +42,18 @@ interface Assignment {
 }
 
 const initialShiftTypes: ShiftType[] = [
-  { id: "morning", name: "Morning", startTime: "08:00", endTime: "16:00", colorClass: "bg-[#F1EAF8] text-[#7A58A2]" },
-  { id: "afternoon", name: "Afternoon", startTime: "13:00", endTime: "17:00", colorClass: "bg-[#E9F4EE] text-[#4F8C67]" },
-  { id: "evening", name: "Evening", startTime: "18:00", endTime: "23:00", colorClass: "bg-[#E9F4FA] text-[#4A93AA]" },
+  { id: "morning", name: "Morning", startTime: "08:00", endTime: "16:00", colorClass: "bg-[#E1D5F1] text-[#5B3E82]" },
+  { id: "afternoon", name: "Afternoon", startTime: "13:00", endTime: "17:00", colorClass: "bg-[#D8EBDD] text-[#2F6E49]" },
+  { id: "evening", name: "Evening", startTime: "18:00", endTime: "23:00", colorClass: "bg-[#D6EAF7] text-[#1F5F85]" },
 ];
 
 const colorOptions = [
-  "bg-[#E9F4FA] text-[#4A93AA]",
-  "bg-[#F1EAF8] text-[#7A58A2]",
-  "bg-[#E9F4EE] text-[#4F8C67]",
-  "bg-[#F7EEC7] text-[#8B7A35]",
-  "bg-[#F9D8E9] text-[#A34676]",
-  "bg-[#F8DBC6] text-[#A45A38]",
+  "bg-[#D6EAF7] text-[#1F5F85]",
+  "bg-[#E1D5F1] text-[#5B3E82]",
+  "bg-[#D8EBDD] text-[#2F6E49]",
+  "bg-[#EADFAF] text-[#6E5A16]",
+  "bg-[#EDC3DA] text-[#8A2D5A]",
+  "bg-[#EBC9B5] text-[#7C3F20]",
 ];
 
 const repeatModes: RepeatMode[] = ["No repeat", "Daily", "Weekly", "Monthly"];
